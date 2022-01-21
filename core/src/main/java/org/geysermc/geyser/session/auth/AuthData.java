@@ -37,6 +37,6 @@ public record AuthData(String name, UUID uuid, String xuid,
         // we can't upload the skin in LoginEncryptionUtil since the global server would return
         // the skin too fast, that's why we upload it after we know for sure that the target server
         // is ready to handle the result of the global server
-        geyser.getSkinUploader().uploadSkin(certChainData, clientData);
+//        geyser.getSkinUploader().uploadSkin(certChainData, clientData);
     }
 }

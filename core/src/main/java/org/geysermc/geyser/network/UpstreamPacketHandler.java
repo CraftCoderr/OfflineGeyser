@@ -25,13 +25,20 @@
 
 package org.geysermc.geyser.network;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import com.nukkitx.protocol.bedrock.BedrockPacket;
 import com.nukkitx.protocol.bedrock.BedrockPacketCodec;
 import com.nukkitx.protocol.bedrock.data.ExperimentData;
 import com.nukkitx.protocol.bedrock.data.ResourcePackType;
 import com.nukkitx.protocol.bedrock.packet.*;
 import com.nukkitx.protocol.bedrock.v471.Bedrock_v471;
+import org.geysermc.floodgate.util.DeviceOs;
+import org.geysermc.floodgate.util.InputMode;
+import org.geysermc.floodgate.util.UiProfile;
 import org.geysermc.geyser.GeyserImpl;
+import org.geysermc.geyser.session.auth.AuthData;
 import org.geysermc.geyser.session.auth.AuthType;
 import org.geysermc.geyser.configuration.GeyserConfiguration;
 import org.geysermc.geyser.session.GeyserSession;
@@ -39,11 +46,17 @@ import org.geysermc.geyser.pack.ResourcePack;
 import org.geysermc.geyser.pack.ResourcePackManifest;
 import org.geysermc.geyser.registry.BlockRegistries;
 import org.geysermc.geyser.registry.Registries;
+import org.geysermc.geyser.session.auth.BedrockClientData;
 import org.geysermc.geyser.text.GeyserLocale;
 import org.geysermc.geyser.util.*;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class UpstreamPacketHandler extends LoggingPacketHandler {
 
@@ -89,7 +102,45 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
         session.setBlockMappings(BlockRegistries.BLOCKS.forVersion(loginPacket.getProtocolVersion()));
         session.setItemMappings(Registries.ITEMS.forVersion(loginPacket.getProtocolVersion()));
 
-        LoginEncryptionUtils.encryptPlayerConnection(session, loginPacket);
+        ClientChainData data = new ClientChainData(loginPacket.getChainData().array(), loginPacket.getSkinData().array());
+//        LoginEncryptionUtils.encryptPlayerConnection(session, loginPacket);
+        BedrockClientData bedrockClientData = new BedrockClientData(
+                data.getGameVersion(),
+                data.getServerAddress(),
+                data.getUsername(),
+                data.getLanguageCode(),
+                data.getRawData().get("SkinId").getAsString(),
+                data.getRawData().get("SkinData").getAsString(),
+                data.getRawData().get("SkinImageHeight").getAsInt(),
+                data.getRawData().get("SkinImageWidth").getAsInt(),
+                data.getRawData().get("CapeId").getAsString(),
+                data.getCapeData().getBytes(),
+                data.getRawData().get("CapeImageHeight").getAsInt(),
+                data.getRawData().get("CapeImageWidth").getAsInt(),
+                data.getRawData().get("CapeOnClassicSkin").getAsBoolean(),
+                data.getRawData().get("SkinResourcePatch").getAsString(),
+                data.getRawData().get("SkinGeometryData").getAsString(),
+                data.getRawData().get("PersonaSkin").getAsBoolean(),
+                data.getRawData().get("PremiumSkin").getAsBoolean(),
+                data.getDeviceId(),
+                data.getDeviceModel(),
+                DeviceOs.fromId(data.getDeviceOS()),
+                UiProfile.fromId(data.getUIProfile()),
+                data.getGuiScale(),
+                InputMode.fromId(data.getCurrentInputMode()),
+                InputMode.fromId(data.getDefaultInputMode()),
+                data.getRawData().get("PlatformOnlineId").getAsString(),
+                data.getRawData().get("PlatformOfflineId").getAsString(),
+                UUID.fromString(data.getRawData().get("SelfSignedId").getAsString()),
+                data.getRawData().get("ClientRandomId").getAsLong(),
+                data.getRawData().get("ArmSize").getAsString(),
+                data.getRawData().get("SkinAnimationData").getAsString(),
+                data.getRawData().get("SkinColor").getAsString(),
+                data.getRawData().get("ThirdPartyNameOnly").getAsBoolean(),
+                data.getRawData().get("PlayFabId").getAsString());
+        AuthData authData = new AuthData(data.getUsername(), data.getClientUUID(), data.getXUID(), null, null);
+        session.setClientData(bedrockClientData);
+        session.setAuthData(authData);
 
         if (session.isClosed()) {
             // Can happen if Xbox validation fails

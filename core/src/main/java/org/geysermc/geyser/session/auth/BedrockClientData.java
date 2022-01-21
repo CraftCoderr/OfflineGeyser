@@ -27,6 +27,7 @@ package org.geysermc.geyser.session.auth;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.geysermc.floodgate.util.DeviceOs;
 import org.geysermc.floodgate.util.InputMode;
@@ -36,6 +37,7 @@ import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Getter
+@AllArgsConstructor
 public final class BedrockClientData {
     @JsonProperty(value = "GameVersion")
     private String gameVersion;
