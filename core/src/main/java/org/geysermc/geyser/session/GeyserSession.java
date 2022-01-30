@@ -45,6 +45,7 @@ import com.github.steveice10.mc.protocol.data.game.setting.SkinPart;
 import com.github.steveice10.mc.protocol.data.game.statistic.CustomStatistic;
 import com.github.steveice10.mc.protocol.data.game.statistic.Statistic;
 import com.github.steveice10.mc.protocol.packet.handshake.serverbound.ClientIntentionPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundChatPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundClientInformationPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundMovePlayerPosPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundPlayerAbilitiesPacket;
@@ -55,6 +56,9 @@ import com.github.steveice10.packetlib.event.session.*;
 import com.github.steveice10.packetlib.packet.Packet;
 import com.github.steveice10.packetlib.tcp.TcpClientSession;
 import com.github.steveice10.packetlib.tcp.TcpSession;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.nimbusds.jose.shaded.json.JSONArray;
 import com.nukkitx.math.GenericMath;
 import com.nukkitx.math.vector.*;
 import com.nukkitx.protocol.bedrock.BedrockPacket;
@@ -76,7 +80,12 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.geysermc.common.PlatformType;
+import org.geysermc.cumulus.CustomForm;
 import org.geysermc.cumulus.Form;
+import org.geysermc.cumulus.SimpleForm;
+import org.geysermc.cumulus.component.InputComponent;
+import org.geysermc.cumulus.component.ToggleComponent;
+import org.geysermc.cumulus.response.SimpleFormResponse;
 import org.geysermc.cumulus.util.FormBuilder;
 import org.geysermc.floodgate.crypto.FloodgateCipher;
 import org.geysermc.floodgate.util.BedrockData;
@@ -656,6 +665,23 @@ public class GeyserSession implements GeyserConnection, CommandSender {
                     }
 
                     protocol = new MinecraftProtocol(validUsername);
+
+                    this.sendForm(
+                            CustomForm.builder()
+                                    .title("Вход на сервер")
+                                    .component(InputComponent.of("Логин", "введите логин", ""))
+                                    .component(InputComponent.of("Пароль", "введите пароль", ""))
+                                    .responseHandler((form, responseData) -> {
+                                        ServerboundChatPacket chatPacket = new ServerboundChatPacket(
+                                                responseData
+                                                        .replaceAll("\\[\"", "")
+                                                        .replaceAll("\",\"", " ")
+                                                        .replaceAll("\"]", "")
+                                        );
+                                        this.sendDownstreamPacket(chatPacket);
+                                        geyser.getLogger().info(responseData);
+                                    })
+                                    .build());
                 }
             } catch (InvalidCredentialsException | IllegalArgumentException e) {
                 geyser.getLogger().info(GeyserLocale.getLocaleStringLog("geyser.auth.login.invalid", username));
